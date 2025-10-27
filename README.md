@@ -13,6 +13,7 @@ Aplikasi desktop ringan untuk Windows 10/11 (64-bit) yang menyediakan fitur _sel
 - **Antarmuka modern** dengan panel kontrol ringkas, checkbox **Auto Copy to Clipboard**, dan indikator jumlah karakter.
 - **Proses berjalan di latar** sehingga UI tetap responsif.
 - **Hasil OCR siap salin** hanya dengan satu klik.
+- **Ikon aplikasi kustom** – bundel `image.ico` membuat ikon tampil konsisten di title bar, taskbar, dan Explorer.
 
 ## Persyaratan Sistem
 
@@ -94,11 +95,13 @@ python build.py --strip --upx-dir "C:\\Tools\\upx"
 
 ### Opsi Tambahan
 
-- `--icon icon.ico` – menyematkan ikon kustom.
+- `--icon path\to\icon.ico` – gunakan ikon lain (default akan otomatis memakai `image.ico` bila tersedia).
 - `--runtime-tmpdir %LOCALAPPDATA%\ORC-WIN-tmp` – menentukan lokasi ekstraksi runtime untuk menghindari direktori sementara bawaan.
 - `--no-upx` – menonaktifkan kompresi apabila ditemukan masalah kompatibilitas antivirus.
 
 > **Catatan:** Pastikan PyInstaller sudah terpasang (`pip install pyinstaller`) sebelum menjalankan skrip `build.py`.
+
+Selama runtime, aplikasi mencari `image.ico` di direktori bundle PyInstaller, folder `src`, akar repositori, atau lokasi eksekusi saat ini. Simpan berkas tersebut berdampingan dengan executable hasil build bila Anda mengganti ikon default.
 
 Berkas `.exe` tetap membutuhkan akses ke `tesseract.exe`. Aplikasi akan menampilkan peringatan jelas bila executable tidak ditemukan atau bukan file yang valid.
 

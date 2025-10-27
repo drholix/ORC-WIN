@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
 import sys
 from pathlib import Path
@@ -49,6 +50,9 @@ EXCLUDED_MODULES = (
 )
 
 
+ICON_FILENAME = "image.ico"
+
+
 def _build_arguments(args: argparse.Namespace) -> list[str]:
     project_root = Path(__file__).resolve().parent
     main_script = project_root / "src" / "main.py"
@@ -85,11 +89,19 @@ def _build_arguments(args: argparse.Namespace) -> list[str]:
             if detected_upx:
                 options.append(f"--upx-dir={Path(detected_upx).parent}")
 
+    icon_path: Path | None = None
     if args.icon:
         icon_path = Path(args.icon)
         if not icon_path.exists():
             raise SystemExit(f"Icon not found: {icon_path}")
+    else:
+        default_icon = project_root / ICON_FILENAME
+        if default_icon.exists():
+            icon_path = default_icon
+
+    if icon_path is not None:
         options.append(f"--icon={icon_path}")
+        options.append(f"--add-data={icon_path}{os.pathsep}.")
 
     if args.runtime_tmpdir:
         options.append(f"--runtime-tmpdir={args.runtime_tmpdir}")

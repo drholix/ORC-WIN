@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 from typing import Optional
 
 from PIL import Image, ImageQt
 from PySide6.QtCore import QSettings, QThreadPool, Qt
-from PySide6.QtGui import QGuiApplication, QKeySequence, QShortcut
+from PySide6.QtGui import QGuiApplication, QIcon, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -26,6 +27,55 @@ from hotkeys import GlobalHotkey
 from ocr import OcrConfig
 from overlay import ScreenCaptureOverlay
 from worker import OcrWorker
+
+
+ICON_FILENAME = "image.ico"
+
+
+def _resolve_asset(name: str) -> Path | None:
+    """Locate *name* across common runtime locations.
+
+    The search order covers PyInstaller bundles, the package directory, the
+    repository root (one level above ``src``), and the current working
+    directory. Returning ``None`` keeps the caller resilient when the asset is
+    missing.
+    """
+
+    base_dirs: list[Path] = []
+    if hasattr(sys, "_MEIPASS"):
+        base_dirs.append(Path(getattr(sys, "_MEIPASS")))
+
+    module_dir = Path(__file__).resolve().parent
+    base_dirs.extend(
+        [
+            module_dir,
+            module_dir.parent,
+            Path.cwd(),
+        ]
+    )
+
+    seen: set[Path] = set()
+    for base in base_dirs:
+        try:
+            base = base.resolve()
+        except OSError:
+            continue
+        if base in seen:
+            continue
+        seen.add(base)
+        candidate = base / name
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def _load_app_icon() -> QIcon | None:
+    """Return the application icon if available on disk."""
+
+    icon_path = _resolve_asset(ICON_FILENAME)
+    if icon_path is None:
+        return None
+    return QIcon(str(icon_path))
 
 
 def _pixmap_to_pillow(pixmap) -> Image.Image:
@@ -381,7 +431,13 @@ def run() -> int:
         )
 
     app = QApplication(sys.argv)
+    icon = _load_app_icon()
+    if icon is not None:
+        app.setWindowIcon(icon)
+
     window = MainWindow()
+    if icon is not None:
+        window.setWindowIcon(icon)
     window.show()
     return app.exec()
 
