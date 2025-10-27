@@ -196,8 +196,6 @@ class MainWindow(QMainWindow):
 def run() -> int:
     """Bootstrap the Qt application and enter the main event loop."""
 
-    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
-    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
     if hasattr(QGuiApplication, "setHighDpiScaleFactorRoundingPolicy"):
         QGuiApplication.setHighDpiScaleFactorRoundingPolicy(
             Qt.HighDpiScaleFactorRoundingPolicy.PassThrough

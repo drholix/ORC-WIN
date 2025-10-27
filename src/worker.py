@@ -1,7 +1,6 @@
 """Qt worker infrastructure for executing OCR tasks off the UI thread."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Optional
 
 from PIL import Image
@@ -17,15 +16,13 @@ class WorkerSignals(QObject):
     failed = Signal(str)
 
 
-@dataclass(slots=True)
 class OcrWorker(QRunnable):
     """Background job that runs OCR using :func:`perform_ocr`."""
 
-    image: Image.Image
-    config: Optional[OcrConfig]
-
-    def __post_init__(self) -> None:
+    def __init__(self, *, image: Image.Image, config: Optional[OcrConfig]) -> None:
         super().__init__()
+        self.image = image
+        self.config = config
         self.signals = WorkerSignals()
 
     @Slot()
