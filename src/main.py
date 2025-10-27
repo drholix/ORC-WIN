@@ -6,14 +6,13 @@ from typing import Optional
 
 from PIL import Image, ImageQt
 from PySide6.QtCore import QThreadPool, Qt
-from PySide6.QtGui import QGuiApplication, QKeySequence
+from PySide6.QtGui import QGuiApplication, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
     QMainWindow,
     QMessageBox,
     QPushButton,
-    QShortcut,
     QStatusBar,
     QTextEdit,
     QVBoxLayout,
