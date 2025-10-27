@@ -6,7 +6,12 @@ import sys
 from typing import Callable, Dict, Optional, Tuple
 
 from PySide6.QtCore import QAbstractNativeEventFilter, QObject, Signal, Qt
-from PySide6.QtGui import QGuiApplication, QKeyCombination, QKeySequence
+from PySide6.QtGui import QGuiApplication, QKeySequence
+
+try:  # Qt < 6.4 on Windows may omit QKeyCombination from the bindings
+    from PySide6.QtGui import QKeyCombination
+except ImportError:  # pragma: no cover - happens on older PySide6 wheels
+    QKeyCombination = None  # type: ignore
 
 _IS_WINDOWS = sys.platform == "win32"
 
@@ -146,9 +151,12 @@ class GlobalHotkey(QObject):
         if not _IS_WINDOWS:
             raise RuntimeError("Native hotkeys are only implemented for Windows")
 
-        combination = QKeyCombination(sequence[0])
-        modifiers = combination.keyboardModifiers()
-        key = combination.key()
+        if QKeyCombination is not None:
+            combination = QKeyCombination(sequence[0])
+            modifiers = combination.keyboardModifiers()
+            key = combination.key()
+        else:
+            modifiers, key = _sequence_to_components(sequence)
 
         native_modifiers = 0
         if modifiers & Qt.KeyboardModifier.ControlModifier:
@@ -171,3 +179,75 @@ class GlobalHotkey(QObject):
             self.setRegistered(False)
         except Exception:
             pass
+
+
+def _sequence_to_components(sequence: QKeySequence) -> Tuple[Qt.KeyboardModifiers, int]:
+    """Fallback for extracting Qt modifier and key data without QKeyCombination."""
+
+    text = sequence.toString(QKeySequence.SequenceFormat.NativeText)
+    if not text:
+        raise ValueError("Unable to convert an empty key sequence")
+
+    parts = [part.strip() for part in text.split("+") if part.strip()]
+    if not parts:
+        raise ValueError(f"Unrecognised key sequence format: {text!r}")
+
+    modifiers = Qt.KeyboardModifiers(Qt.KeyboardModifier.NoModifier)
+    while len(parts) > 1:
+        piece = parts.pop(0).lower()
+        if piece in {"ctrl", "control"}:
+            modifiers |= Qt.KeyboardModifier.ControlModifier
+        elif piece == "shift":
+            modifiers |= Qt.KeyboardModifier.ShiftModifier
+        elif piece in {"alt", "menu"}:
+            modifiers |= Qt.KeyboardModifier.AltModifier
+        elif piece in {"win", "meta", "super"}:
+            modifiers |= Qt.KeyboardModifier.MetaModifier
+        else:
+            raise ValueError(f"Unsupported modifier component: {piece!r}")
+
+    key_name = parts[0]
+    key = _resolve_qt_key(key_name)
+    return modifiers, key
+
+
+def _resolve_qt_key(name: str) -> int:
+    """Translate a textual key name into the closest Qt::Key value."""
+
+    token = name.lower()
+    if token.startswith("f") and token[1:].isdigit():
+        index = int(token[1:])
+        if 1 <= index <= 35:
+            return int(Qt.Key.Key_F1) + (index - 1)
+
+    special = {
+        "space": Qt.Key.Key_Space,
+        "tab": Qt.Key.Key_Tab,
+        "backtab": Qt.Key.Key_Backtab,
+        "enter": Qt.Key.Key_Return,
+        "return": Qt.Key.Key_Return,
+        "escape": Qt.Key.Key_Escape,
+        "esc": Qt.Key.Key_Escape,
+        "backspace": Qt.Key.Key_Backspace,
+        "delete": Qt.Key.Key_Delete,
+        "insert": Qt.Key.Key_Insert,
+        "home": Qt.Key.Key_Home,
+        "end": Qt.Key.Key_End,
+        "pageup": Qt.Key.Key_PageUp,
+        "pagedown": Qt.Key.Key_PageDown,
+        "up": Qt.Key.Key_Up,
+        "down": Qt.Key.Key_Down,
+        "left": Qt.Key.Key_Left,
+        "right": Qt.Key.Key_Right,
+        "printscreen": Qt.Key.Key_Print,
+        "scrolllock": Qt.Key.Key_ScrollLock,
+        "pause": Qt.Key.Key_Pause,
+    }
+
+    if token in special:
+        return int(special[token])
+
+    if len(name) == 1:
+        return ord(name.upper())
+
+    raise ValueError(f"Unsupported key component: {name!r}")
