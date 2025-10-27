@@ -5,14 +5,11 @@ import sys
 from typing import Optional
 
 from PIL import Image, ImageQt
-from PySide6.QtCore import QSettings, QThreadPool, Qt
+from PySide6.QtCore import QThreadPool, Qt
 from PySide6.QtGui import QGuiApplication, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
-    QCheckBox,
-    QFrame,
     QHBoxLayout,
-    QLabel,
     QMainWindow,
     QMessageBox,
     QPushButton,
