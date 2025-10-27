@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import os
 import platform
+import shlex
+import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, Optional
@@ -39,6 +41,56 @@ def _auto_detect_windows_tesseract() -> Optional[str]:
         if expanded.exists():
             return str(expanded)
     return None
+
+
+def _validate_extra_flags(flags: Iterable[str]) -> tuple[str, ...]:
+    """Reject suspicious flag payloads before forwarding them to Tesseract."""
+
+    sanitised: list[str] = []
+    for raw in flags:
+        if raw is None:
+            continue
+        if not isinstance(raw, str):
+            raise OcrError("All extra flags must be text strings")
+
+        flag = raw.strip()
+        if not flag:
+            continue
+
+        if any(char in flag for char in {"\n", "\r", "&", "|", ";"}):
+            raise OcrError(
+                "Extra flags contain unsupported control characters. "
+                "Remove shell operators such as ';' or '&'."
+            )
+
+        sanitised.append(flag)
+    return tuple(sanitised)
+
+
+def _resolve_executable(candidate: str) -> str:
+    """Resolve ``candidate`` into an absolute executable path with validation."""
+
+    expanded = os.path.expandvars(os.path.expanduser(candidate))
+    if not expanded:
+        raise OcrError("Empty Tesseract executable path received")
+
+    path = Path(expanded)
+    if path.is_absolute():
+        resolved = path.resolve()
+        if not resolved.exists():
+            raise OcrError(f"Tesseract executable not found: {resolved}")
+        if not os.access(resolved, os.X_OK):
+            raise OcrError(f"Tesseract executable is not accessible: {resolved}")
+        if platform.system() == "Windows" and resolved.suffix.lower() not in {".exe", ".bat", ".cmd"}:
+            raise OcrError("Tesseract path must point to an executable file")
+        return str(resolved)
+
+    resolved = shutil.which(expanded)
+    if resolved is None:
+        raise OcrError(
+            "Unable to locate Tesseract executable on PATH. Set TESSERACT_CMD to an absolute path."
+        )
+    return resolved
 
 
 @dataclass(slots=True)
@@ -80,11 +132,15 @@ class OcrConfig:
                 if detected:
                     self.tesseract_cmd = detected
 
+        if self.tesseract_cmd:
+            self.tesseract_cmd = _resolve_executable(self.tesseract_cmd)
+
         env_lang = os.getenv("OCR_LANGUAGES")
         if env_lang and self.languages == DEFAULT_LANG:
             self.languages = env_lang
 
         self.languages = self.languages.strip()
+        self.extra_flags = _validate_extra_flags(self.extra_flags)
 
     def apply(self) -> None:
         """Apply the configuration to the active pytesseract runtime."""
@@ -100,8 +156,8 @@ class OcrConfig:
             flags.extend(["--psm", str(self.psm)])
         if self.oem >= 0:
             flags.extend(["--oem", str(self.oem)])
-        flags.extend(str(flag) for flag in self.extra_flags)
-        return " ".join(flags).strip()
+        flags.extend(self.extra_flags)
+        return " ".join(shlex.quote(flag) for flag in flags).strip()
 
 
 def _preprocess_image(image: Image.Image) -> Image.Image:

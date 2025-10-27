@@ -9,6 +9,7 @@ Aplikasi desktop ringan untuk Windows 10/11 (64-bit) yang menyediakan fitur _sel
 - **Pintasan keyboard** `Ctrl + Shift + O` untuk langsung masuk ke mode seleksi.
 - **Hotkey global bawaan** untuk `Ctrl + Shift + O` sehingga pintasan bekerja walau jendela aplikasi tidak fokus.
 - **Mesin OCR Tesseract** dengan dukungan bahasa Indonesia (`ind`) dan Inggris (`eng`).
+- **Validasi keamanan konfigurasi** – path `tesseract.exe` otomatis disaring agar hanya executable tepercaya yang dipakai dan opsi tambahan Tesseract dibersihkan dari karakter berbahaya.
 - **Antarmuka modern** dengan panel kontrol ringkas, checkbox **Auto Copy to Clipboard**, dan indikator jumlah karakter.
 - **Proses berjalan di latar** sehingga UI tetap responsif.
 - **Hasil OCR siap salin** hanya dengan satu klik.
@@ -65,14 +66,41 @@ Aplikasi desktop ringan untuk Windows 10/11 (64-bit) yang menyediakan fitur _sel
 
 ## Membuat Versi Portable (.exe)
 
-Gunakan PyInstaller untuk membuat paket mandiri:
+Skrip `build.py` menyiapkan perintah PyInstaller yang sudah dioptimalkan untuk ukuran file akhir yang kecil:
 
 ```powershell
-pip install pyinstaller
-pyinstaller --noconfirm --windowed --onefile --name ORC-WIN src\main.py
+python build.py --strip
 ```
 
-Berkas `.exe` akan tersedia di folder `dist`. Pastikan `tesseract.exe` dapat ditemukan melalui `PATH` atau bundelkan bersama file `tessdata` jika membuat distribusi khusus. Sertakan `vcruntime140.dll` (biasanya sudah ada di Windows 10) bila menggunakan PyInstaller satu berkas.
+Perintah di atas akan:
+
+- Menghasilkan satu berkas `.exe` di folder `dist`.
+- Mengaktifkan optimasi bytecode (`-OO`) dan membersihkan folder kerja PyInstaller otomatis.
+- Mengecualikan modul-modul PySide6 yang tidak digunakan agar ukuran paket lebih ramping.
+
+### Kompresi Tambahan Dengan UPX
+
+Instal [UPX](https://upx.github.io/) dan pastikan tersedia di `PATH`, lalu jalankan:
+
+```powershell
+python build.py --strip
+```
+
+Jika UPX berada di lokasi khusus, sertakan `--upx-dir`:
+
+```powershell
+python build.py --strip --upx-dir "C:\\Tools\\upx"
+```
+
+### Opsi Tambahan
+
+- `--icon icon.ico` – menyematkan ikon kustom.
+- `--runtime-tmpdir %LOCALAPPDATA%\ORC-WIN-tmp` – menentukan lokasi ekstraksi runtime untuk menghindari direktori sementara bawaan.
+- `--no-upx` – menonaktifkan kompresi apabila ditemukan masalah kompatibilitas antivirus.
+
+> **Catatan:** Pastikan PyInstaller sudah terpasang (`pip install pyinstaller`) sebelum menjalankan skrip `build.py`.
+
+Berkas `.exe` tetap membutuhkan akses ke `tesseract.exe`. Aplikasi akan menampilkan peringatan jelas bila executable tidak ditemukan atau bukan file yang valid.
 
 ## Kustomisasi
 
@@ -94,6 +122,8 @@ Berkas `.exe` akan tersedia di folder `dist`. Pastikan `tesseract.exe` dapat dit
 - Pipeline OCR diperbarui dengan praproses citra ringan dan penanganan kesalahan yang lebih informatif.
 - Overlay seleksi kini mendukung multi-monitor dan pembatalan cepat dengan tombol `Esc`/`Q`.
 - Optimalisasi tambahan untuk Python 3.13, termasuk dukungan DPI tinggi yang lebih akurat serta deteksi otomatis lokasi `tesseract.exe` di Windows 10/11.
+- Validasi keamanan konfigurasi OCR serta sanitasi argumen tambahan sebelum dikirim ke Tesseract.
+- Skrip `build.py` baru untuk menghasilkan executable PyInstaller yang lebih kecil dengan eksklusi modul PySide6 yang tidak dipakai dan dukungan kompresi UPX opsional.
 
 ## Lisensi
 
