@@ -33,9 +33,10 @@ Aplikasi desktop ringan untuk Windows 10/11 (64-bit) yang menyediakan fitur _sel
    ```
 
 ## Menjalankan Aplikasi Secara Langsung
-
+FIRST: https://github.com/drholix/ORC-WIN.git
 1. Siapkan lingkungan Python (contoh menggunakan PowerShell):
    ```powershell
+   cd ORC-WIN
    python -m venv .venv
    .venv\Scripts\activate
    python -m pip install --upgrade pip setuptools wheel
