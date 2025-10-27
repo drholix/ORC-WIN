@@ -20,11 +20,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-try:  # pragma: no cover - optional dependency available on Windows only
-    from qhotkey import QHotkey
-except Exception:  # pragma: no cover - qhotkey may not be installed on dev systems
-    QHotkey = None
-
+from hotkeys import GlobalHotkey
 from ocr import OcrConfig
 from overlay import ScreenCaptureOverlay
 from worker import OcrWorker
@@ -52,7 +48,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("ORC-WIN · Selection OCR")
         self.setMinimumSize(460, 320)
         self._ocr_config: Optional[OcrConfig] = None
-        self._global_hotkey: Optional[QHotkey] = None
+        self._global_hotkey: Optional[GlobalHotkey] = None
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -165,20 +161,25 @@ class MainWindow(QMainWindow):
         local_shortcut = QShortcut(QKeySequence("Ctrl+Shift+O"), self)
         local_shortcut.activated.connect(self.start_selection)
 
-        if QHotkey is None:
+        if not GlobalHotkey.is_supported():
             self.status_bar.showMessage(
-                "Global hotkey unavailable. Install qhotkey for system-wide shortcut.",
+                "Global hotkey unavailable on this platform.",
                 5000,
             )
             return
 
-        self._global_hotkey = QHotkey(QKeySequence("Ctrl+Shift+O"), autoRegister=True, parent=self)
-        if not self._global_hotkey.isRegistered():
+        try:
+            self._global_hotkey = GlobalHotkey(
+                QKeySequence("Ctrl+Shift+O"), auto_register=True, parent=self
+            )
+        except RuntimeError:
+            self._global_hotkey = None
             self.status_bar.showMessage(
                 "Could not register global shortcut. Another application may be using it.",
                 5000,
             )
             return
+
         self._global_hotkey.activated.connect(self.start_selection)
 
     # ------------------------------------------------------------------

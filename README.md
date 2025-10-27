@@ -6,7 +6,7 @@ Aplikasi desktop ringan untuk Windows 10/11 (64-bit) yang menyediakan fitur _sel
 
 - **Pemilihan area layar cepat** dengan tampilan overlay gelap seperti Snipping Tool.
 - **Pintasan keyboard** `Ctrl + Shift + O` untuk langsung masuk ke mode seleksi.
-- **Hotkey global opsional** menggunakan `qhotkey` sehingga pintasan bekerja walau jendela aplikasi tidak fokus.
+- **Hotkey global bawaan** untuk `Ctrl + Shift + O` sehingga pintasan bekerja walau jendela aplikasi tidak fokus.
 - **Mesin OCR Tesseract** dengan dukungan bahasa Indonesia (`ind`) dan Inggris (`eng`).
 - **Antarmuka sederhana**: tombol "Select Area", tombol "Copy to Clipboard", dan kotak teks hasil.
 - **Proses berjalan di latar** sehingga UI tetap responsif.
@@ -38,14 +38,8 @@ Aplikasi desktop ringan untuk Windows 10/11 (64-bit) yang menyediakan fitur _sel
    python -m pip install --upgrade pip setuptools wheel
    pip install -r requirements.txt
    ```
-   > **Catatan:** Berkas `requirements.txt` otomatis memasang `qhotkey` hanya pada Windows karena pustaka tersebut memang khusus Windows.
 
-2. (Opsional) Pastikan `qhotkey` terpasang bila Anda ingin mendukung hotkey global di instalasi yang sudah ada:
-   ```powershell
-   pip install qhotkey
-   ```
-
-3. Jalankan aplikasi:
+2. Jalankan aplikasi:
    ```powershell
    python src\main.py
    ```
@@ -53,7 +47,7 @@ Aplikasi desktop ringan untuk Windows 10/11 (64-bit) yang menyediakan fitur _sel
 ## Cara Pakai
 
 1. Jalankan aplikasi, antarmuka utama akan menampilkan dua tombol dan kotak teks kosong.
-2. Klik tombol **Select Area** atau tekan pintasan `Ctrl + Shift + O` (bisa dipicu secara global jika `qhotkey` terpasang).
+2. Klik tombol **Select Area** atau tekan pintasan `Ctrl + Shift + O` (pintasan ini bersifat global di Windows 10/11).
 3. Layar akan meredup. Seret kursor untuk memilih area yang ingin dikenali.
 4. Lepaskan klik. Aplikasi otomatis menangkap area tersebut dan menjalankan OCR.
 5. Hasil teks muncul di kotak teks. Klik **Copy to Clipboard** untuk menyalin ke clipboard Windows.
@@ -79,13 +73,13 @@ Berkas `.exe` akan tersedia di folder `dist`. Pastikan `tesseract.exe` dapat dit
 ## Pemecahan Masalah
 
 - **Tesseract tidak ditemukan** – pastikan `tesseract.exe` bisa diakses melalui `PATH` atau set variabel `TESSERACT_CMD`. Aplikasi akan menampilkan pesan kesalahan yang jelas bila executable tidak ditemukan. Versi terbaru juga mencoba mendeteksi Tesseract otomatis di `C:\Program Files\Tesseract-OCR\tesseract.exe`.
-- **Hotkey global tidak aktif** – pastikan `qhotkey` terinstal dan aplikasi dijalankan dengan hak akses yang sama seperti aplikasi lain yang mungkin memantau keyboard global.
+- **Hotkey global tidak aktif** – pastikan tidak ada aplikasi lain yang menggunakan kombinasi `Ctrl + Shift + O`. Jika konflik terjadi, ganti kombinasi di `src/main.py` atau jalankan aplikasi dengan hak akses administrator.
 - **Akurasi kurang baik** – perbaiki pencahayaan pada area tangkapan, atau tambahkan argumen ekstra pada `OcrConfig.extra_flags` (misal `--dpi 200`).
 
 ## Changelog Singkat
 
 - Migrasi dari PyQt5 ke PySide6 untuk dukungan jangka panjang dan performa yang lebih baik di Windows 10.
-- Penambahan hotkey global opsional dan pelepasan otomatis ketika aplikasi ditutup.
+- Penambahan hotkey global bawaan berbasis Win32 `RegisterHotKey` dengan pelepasan otomatis saat aplikasi ditutup sehingga tetap kompatibel dengan Python 3.13.
 - Pipeline OCR diperbarui dengan praproses citra ringan dan penanganan kesalahan yang lebih informatif.
 - Overlay seleksi kini mendukung multi-monitor dan pembatalan cepat dengan tombol `Esc`/`Q`.
 - Optimalisasi tambahan untuk Python 3.13, termasuk dukungan DPI tinggi yang lebih akurat serta deteksi otomatis lokasi `tesseract.exe` di Windows 10/11.
