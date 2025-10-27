@@ -45,6 +45,8 @@ class ScreenCaptureOverlay(QWidget):
 
         geometry = screen.geometry()
         self.setGeometry(geometry)
+        if self.windowHandle() is not None:
+            self.windowHandle().setScreen(screen)
         self.show()
         self.activateWindow()
         self.raise_()

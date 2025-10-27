@@ -1,6 +1,6 @@
 # ORC-WIN
 
-Aplikasi desktop ringan untuk Windows 10 yang menyediakan fitur _selection-based OCR_. Pengguna dapat memilih area tertentu pada layar dan aplikasi akan langsung mengenali teks di area tersebut menggunakan mesin Tesseract (dukungan bahasa Indonesia dan Inggris). Rilis ini memanfaatkan PySide6 dan pipeline OCR yang diperbarui agar lebih cepat, stabil, dan efisien.
+Aplikasi desktop ringan untuk Windows 10/11 (64-bit) yang menyediakan fitur _selection-based OCR_. Pengguna dapat memilih area tertentu pada layar dan aplikasi akan langsung mengenali teks di area tersebut menggunakan mesin Tesseract (dukungan bahasa Indonesia dan Inggris). Rilis ini memanfaatkan PySide6 terbaru serta optimasi pipeline OCR untuk memastikan kinerja mulus di Python 3.13.
 
 ## Fitur Utama
 
@@ -14,9 +14,10 @@ Aplikasi desktop ringan untuk Windows 10 yang menyediakan fitur _selection-based
 
 ## Persyaratan Sistem
 
-- Windows 10 (32-bit atau 64-bit)
-- Python 3.10 atau yang lebih baru
+- Windows 10 atau Windows 11 (64-bit)
+- Python 3.11 – 3.13 (disarankan menggunakan Python 3.13 untuk performa terbaik)
 - Tesseract OCR 5.x (dengan bahasa `ind` dan `eng` terpasang)
+- GPU tidak diperlukan; CPU dual-core modern sudah mencukupi
 
 ## Instalasi Tesseract
 
@@ -30,14 +31,16 @@ Aplikasi desktop ringan untuk Windows 10 yang menyediakan fitur _selection-based
 
 ## Menjalankan Aplikasi Secara Langsung
 
-1. Siapkan lingkungan Python:
+1. Siapkan lingkungan Python (contoh menggunakan PowerShell):
    ```powershell
    python -m venv .venv
    .venv\Scripts\activate
-   python -m pip install --upgrade pip
+   python -m pip install --upgrade pip setuptools wheel
    pip install -r requirements.txt
    ```
-2. (Opsional, direkomendasikan) Untuk dukungan hotkey global, instal pustaka tambahan:
+   > **Catatan:** Berkas `requirements.txt` otomatis memasang `qhotkey` hanya pada Windows karena pustaka tersebut memang khusus Windows.
+
+2. (Opsional) Pastikan `qhotkey` terpasang bila Anda ingin mendukung hotkey global di instalasi yang sudah ada:
    ```powershell
    pip install qhotkey
    ```
@@ -75,7 +78,7 @@ Berkas `.exe` akan tersedia di folder `dist`. Pastikan `tesseract.exe` dapat dit
 
 ## Pemecahan Masalah
 
-- **Tesseract tidak ditemukan** – pastikan `tesseract.exe` bisa diakses melalui `PATH` atau set variabel `TESSERACT_CMD`. Aplikasi akan menampilkan pesan kesalahan yang jelas bila executable tidak ditemukan.
+- **Tesseract tidak ditemukan** – pastikan `tesseract.exe` bisa diakses melalui `PATH` atau set variabel `TESSERACT_CMD`. Aplikasi akan menampilkan pesan kesalahan yang jelas bila executable tidak ditemukan. Versi terbaru juga mencoba mendeteksi Tesseract otomatis di `C:\Program Files\Tesseract-OCR\tesseract.exe`.
 - **Hotkey global tidak aktif** – pastikan `qhotkey` terinstal dan aplikasi dijalankan dengan hak akses yang sama seperti aplikasi lain yang mungkin memantau keyboard global.
 - **Akurasi kurang baik** – perbaiki pencahayaan pada area tangkapan, atau tambahkan argumen ekstra pada `OcrConfig.extra_flags` (misal `--dpi 200`).
 
@@ -85,6 +88,7 @@ Berkas `.exe` akan tersedia di folder `dist`. Pastikan `tesseract.exe` dapat dit
 - Penambahan hotkey global opsional dan pelepasan otomatis ketika aplikasi ditutup.
 - Pipeline OCR diperbarui dengan praproses citra ringan dan penanganan kesalahan yang lebih informatif.
 - Overlay seleksi kini mendukung multi-monitor dan pembatalan cepat dengan tombol `Esc`/`Q`.
+- Optimalisasi tambahan untuk Python 3.13, termasuk dukungan DPI tinggi yang lebih akurat serta deteksi otomatis lokasi `tesseract.exe` di Windows 10/11.
 
 ## Lisensi
 

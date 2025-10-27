@@ -4,9 +4,9 @@ from __future__ import annotations
 import sys
 from typing import Optional
 
-from PIL import ImageQt
+from PIL import Image, ImageQt
 from PySide6.QtCore import QThreadPool, Qt
-from PySide6.QtGui import QKeySequence
+from PySide6.QtGui import QGuiApplication, QKeySequence
 from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
@@ -28,6 +28,20 @@ except Exception:  # pragma: no cover - qhotkey may not be installed on dev syst
 from ocr import OcrConfig
 from overlay import ScreenCaptureOverlay
 from worker import OcrWorker
+
+
+def _pixmap_to_pillow(pixmap) -> Image.Image:
+    """Convert a :class:`~PySide6.QtGui.QPixmap` to a high-DPI aware Pillow image."""
+
+    image = ImageQt.fromqpixmap(pixmap)
+    pil_image = image.copy()
+    ratio = pixmap.devicePixelRatioF() if hasattr(pixmap, "devicePixelRatioF") else pixmap.devicePixelRatio()
+    if ratio and ratio != 1:
+        width = int(round(pixmap.width() * ratio))
+        height = int(round(pixmap.height() * ratio))
+        if pil_image.size != (width, height):
+            pil_image = pil_image.resize((width, height), Image.LANCZOS)
+    return pil_image
 
 
 class MainWindow(QMainWindow):
@@ -69,6 +83,7 @@ class MainWindow(QMainWindow):
 
         self.thread_pool = QThreadPool()
         self.thread_pool.setMaxThreadCount(1)
+        self.thread_pool.setExpiryTimeout(-1)
 
         self.overlay = ScreenCaptureOverlay(self)
         self.overlay.selection_captured.connect(self.handle_capture)
@@ -92,6 +107,7 @@ class MainWindow(QMainWindow):
 
         if self.overlay.isVisible():
             return
+        self.select_button.setEnabled(False)
         self.status_bar.showMessage("Select an area to capture…")
         self.overlay.begin_capture()
 
@@ -101,14 +117,14 @@ class MainWindow(QMainWindow):
         if pixmap.isNull():
             self.status_bar.showMessage("Capture cancelled", 2000)
             self.select_button.setEnabled(True)
+            self.select_button.setFocus()
             return
 
         self.status_bar.showMessage("Running OCR…")
-        self.select_button.setEnabled(False)
         self.copy_button.setEnabled(False)
         self.output_edit.clear()
 
-        image = ImageQt.fromqimage(pixmap.toImage())
+        image = _pixmap_to_pillow(pixmap)
         worker = OcrWorker(image=image, config=self.ocr_config)
         worker.signals.completed.connect(self.on_ocr_complete)
         worker.signals.failed.connect(self.on_ocr_failed)
@@ -173,6 +189,7 @@ class MainWindow(QMainWindow):
 
         if self._global_hotkey is not None and self._global_hotkey.isRegistered():
             self._global_hotkey.setRegistered(False)
+        self.thread_pool.waitForDone(2000)
         super().closeEvent(event)
 
 
@@ -181,6 +198,10 @@ def run() -> int:
 
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
     QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
+    if hasattr(QGuiApplication, "setHighDpiScaleFactorRoundingPolicy"):
+        QGuiApplication.setHighDpiScaleFactorRoundingPolicy(
+            Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
+        )
 
     app = QApplication(sys.argv)
     window = MainWindow()

@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import os
+import platform
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Iterable, Optional
 
 from PIL import Image, ImageOps
@@ -14,6 +16,29 @@ DEFAULT_LANG = "ind+eng"
 
 class OcrError(RuntimeError):
     """Application specific error raised when OCR fails for any reason."""
+
+
+WINDOWS_TESSERACT_LOCATIONS: tuple[Path, ...] = (
+    Path(os.environ.get("PROGRAMFILES", "")) / "Tesseract-OCR" / "tesseract.exe",
+    Path(os.environ.get("PROGRAMFILES(X86)", "")) / "Tesseract-OCR" / "tesseract.exe",
+    Path("C:/Program Files/Tesseract-OCR/tesseract.exe"),
+    Path("C:/Program Files (x86)/Tesseract-OCR/tesseract.exe"),
+)
+
+
+def _auto_detect_windows_tesseract() -> Optional[str]:
+    """Return a likely ``tesseract.exe`` path on Windows if one exists."""
+
+    if platform.system() != "Windows":
+        return None
+
+    for candidate in WINDOWS_TESSERACT_LOCATIONS:
+        if not candidate:
+            continue
+        expanded = candidate.expanduser()
+        if expanded.exists():
+            return str(expanded)
+    return None
 
 
 @dataclass(slots=True)
@@ -50,9 +75,16 @@ class OcrConfig:
             env_cmd = os.getenv("TESSERACT_CMD")
             if env_cmd:
                 self.tesseract_cmd = env_cmd
+            else:
+                detected = _auto_detect_windows_tesseract()
+                if detected:
+                    self.tesseract_cmd = detected
+
         env_lang = os.getenv("OCR_LANGUAGES")
         if env_lang and self.languages == DEFAULT_LANG:
             self.languages = env_lang
+
+        self.languages = self.languages.strip()
 
     def apply(self) -> None:
         """Apply the configuration to the active pytesseract runtime."""
@@ -68,8 +100,8 @@ class OcrConfig:
             flags.extend(["--psm", str(self.psm)])
         if self.oem >= 0:
             flags.extend(["--oem", str(self.oem)])
-        flags.extend(self.extra_flags)
-        return " ".join(flags)
+        flags.extend(str(flag) for flag in self.extra_flags)
+        return " ".join(flags).strip()
 
 
 def _preprocess_image(image: Image.Image) -> Image.Image:
@@ -108,7 +140,13 @@ def perform_ocr(image: Image.Image, config: Optional[OcrConfig] = None) -> str:
         "config": engine_config.build_cli_flags(),
     }
 
-    processed = _preprocess_image(image)
+    pil_image = image.copy()
+    if pil_image.mode not in {"RGB", "RGBA", "L", "LA"}:
+        pil_image = pil_image.convert("RGB")
+
+    processed = _preprocess_image(pil_image)
+    if processed.getbbox() is None:
+        return ""
     try:
         text = pytesseract.image_to_string(processed, **tesseract_kwargs)
     except TesseractNotFoundError as exc:  # pragma: no cover - environment specific
