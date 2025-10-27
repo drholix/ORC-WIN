@@ -5,6 +5,7 @@ Aplikasi desktop ringan untuk Windows 10/11 (64-bit) yang menyediakan fitur _sel
 ## Fitur Utama
 
 - **Pemilihan area layar cepat** dengan tampilan overlay gelap seperti Snipping Tool.
+- **Jendela otomatis bersembunyi saat memilih area**, lalu muncul kembali setelah tangkapan selesai sehingga tidak menghalangi layar.
 - **Pintasan keyboard** `Ctrl + Shift + O` untuk langsung masuk ke mode seleksi.
 - **Hotkey global bawaan** untuk `Ctrl + Shift + O` sehingga pintasan bekerja walau jendela aplikasi tidak fokus.
 - **Mesin OCR Tesseract** dengan dukungan bahasa Indonesia (`ind`) dan Inggris (`eng`).
@@ -47,9 +48,9 @@ Aplikasi desktop ringan untuk Windows 10/11 (64-bit) yang menyediakan fitur _sel
 ## Cara Pakai
 
 1. Jalankan aplikasi, antarmuka utama menampilkan panel kontrol dengan checkbox **Auto Copy to Clipboard**, tombol aksi, dan kotak teks kosong.
-2. Klik tombol **Select Area** atau tekan pintasan `Ctrl + Shift + O` (pintasan ini bersifat global di Windows 10/11).
+2. Klik tombol **Select Area** atau tekan pintasan `Ctrl + Shift + O` (pintasan ini bersifat global di Windows 10/11). Jendela utama akan otomatis diminimalkan agar proses seleksi lebih leluasa.
 3. Layar akan meredup. Seret kursor untuk memilih area yang ingin dikenali.
-4. Lepaskan klik. Aplikasi otomatis menangkap area tersebut dan menjalankan OCR.
+4. Lepaskan klik. Setelah area dipilih, jendela aplikasi muncul kembali dan langsung menjalankan OCR.
 5. Atur preferensi clipboard sesuai kebutuhan:
    - Centang opsi **Auto Copy to Clipboard** bila ingin hasil OCR otomatis tersalin.
    - Biarkan tidak tercentang untuk menyalin secara manual dengan tombol **Copy to Clipboard**.

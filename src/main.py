@@ -5,11 +5,14 @@ import sys
 from typing import Optional
 
 from PIL import Image, ImageQt
-from PySide6.QtCore import QThreadPool, Qt
+from PySide6.QtCore import QSettings, QThreadPool, Qt
 from PySide6.QtGui import QGuiApplication, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
+    QFrame,
     QHBoxLayout,
+    QLabel,
     QMainWindow,
     QMessageBox,
     QPushButton,
@@ -53,6 +56,8 @@ class MainWindow(QMainWindow):
         self._ocr_config: Optional[OcrConfig] = None
         self._global_hotkey: Optional[GlobalHotkey] = None
         self._settings = QSettings("ORC-WIN", "SelectionOCR")
+        self._pre_capture_state: Optional[Qt.WindowState] = None
+        self._capture_in_progress = False
 
         self._configure_palette()
 
@@ -146,8 +151,10 @@ class MainWindow(QMainWindow):
     def start_selection(self) -> None:
         """Begin the screen selection workflow."""
 
-        if self.overlay.isVisible():
+        if self.overlay.isVisible() or self._capture_in_progress:
             return
+        self._capture_in_progress = True
+        self._prepare_for_capture()
         self.select_button.setEnabled(False)
         self.copy_button.setEnabled(False)
         self.status_bar.showMessage("Select an area to capture…")
@@ -156,9 +163,12 @@ class MainWindow(QMainWindow):
     def handle_capture(self, pixmap) -> None:
         """Receive the captured pixmap and queue OCR work."""
 
+        self._restore_after_capture()
+        self._capture_in_progress = False
         if pixmap.isNull():
             self.status_bar.showMessage("Capture cancelled", 2000)
             self.select_button.setEnabled(True)
+            self.copy_button.setEnabled(bool(self.output_edit.toPlainText()))
             self.select_button.setFocus()
             return
 
@@ -324,6 +334,30 @@ class MainWindow(QMainWindow):
             return
 
         self._global_hotkey.activated.connect(self.start_selection)
+
+    def _prepare_for_capture(self) -> None:
+        """Minimise the window so it doesn't obstruct the capture area."""
+
+        self._pre_capture_state = self.windowState()
+        self.showMinimized()
+
+    def _restore_after_capture(self) -> None:
+        """Restore the window to the state prior to capture."""
+
+        if self._pre_capture_state is None:
+            return
+
+        state = self._pre_capture_state
+        self._pre_capture_state = None
+
+        if state & Qt.WindowFullScreen:
+            self.showFullScreen()
+        elif state & Qt.WindowMaximized:
+            self.showMaximized()
+        else:
+            self.showNormal()
+        self.raise_()
+        self.activateWindow()
 
     # ------------------------------------------------------------------
     # Qt events
